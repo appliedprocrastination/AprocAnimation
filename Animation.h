@@ -98,7 +98,7 @@ public:
     void    set_location(int new_loc_x, int new_loc_y);
     int*    get_location(int *output);
     int*    get_size(int* output);
-    int*    get_absolute_location(int *output);
+    int*    get_bottom_left_location(int *output);
     int merge_with(Animation *other);
     // End new functionality added with Fetch V2.0
 

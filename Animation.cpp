@@ -391,7 +391,7 @@ int *Animation::get_size(int *output)
 *  is passed as the argument to an other animations merge_with() function. 
 *  Meaning that this animation is merged into another. 
 */
-int* Animation::get_absolute_location(int* output)
+int* Animation::get_bottom_left_location(int* output)
 {
     output[0] = _location_x - _origin_x;
     output[1] = _location_y - _origin_y;
@@ -408,7 +408,7 @@ int Animation::merge_with(Animation* other){
     int *size_this = new int[2];
     if (abs_loc_other != nullptr && size_other != nullptr && origin_this != nullptr && size_this != nullptr)
     {
-        abs_loc_other = other->get_absolute_location(abs_loc_other);
+        abs_loc_other = other->get_bottom_left_location(abs_loc_other);
         size_other = other->get_size(size_other); //width, height
         int other_x = abs_loc_other[0];
         int other_y = abs_loc_other[1];
