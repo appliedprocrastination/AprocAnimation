@@ -172,6 +172,10 @@ void Animation::delete_anim(void)
         delete _frames;
         _frames = nullptr;
     }
+    if(_blank_frame != nullptr){
+        delete _blank_frame;
+        _blank_frame = nullptr;
+    }
 }
 
 Frame *Animation::get_frame(int frame_num)
@@ -258,7 +262,7 @@ void Animation::goto_prev_frame()
 Frame *Animation::get_current_frame(){
     if (_current_frame == -1 || _playback_state == IDLE)
     {
-        return &_blank_frame;
+        return _blank_frame;
     }
     return _frames[_current_frame];
 }
@@ -266,14 +270,14 @@ Frame *Animation::get_next_frame(){
     int idx = _get_next_frame_idx();
     if (idx == -1 || _playback_state == IDLE)
     {
-        return &_blank_frame;
+        return _blank_frame;
     }
     return _frames[idx];
 }
 Frame *Animation::get_prev_frame(){
     if (_prev_frame == -1 || _playback_state == IDLE)
     {
-        return &_blank_frame;
+        return _blank_frame;
     }
     
     return _frames[_prev_frame];

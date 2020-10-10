@@ -61,8 +61,6 @@ private :
     void        _delete_duty_cycle();
 };
 
-Frame blank_frame = Frame(nullptr);
-
 class Animation
 {
 public:
@@ -125,7 +123,7 @@ private:
 
 
     Frame         **_frames;
-    Frame           _blank_frame = blank_frame; //used as return statement when playback_state is DONE
+    Frame          *_blank_frame = new Frame(nullptr); //used as return statement when playback_state is DONE
     int             _get_next_frame_idx();
     int             _get_prev_frame_idx();
     bool            _current_frame_is_on_edge();
