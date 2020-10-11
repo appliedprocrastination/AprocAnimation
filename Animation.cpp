@@ -72,7 +72,7 @@ uint16_t *Frame::get_pixel_intensities()
 }
 uint16_t Frame::get_pixel_intensity_at(int x, int y)
 {
-    if (x < _cols && x > 0 && y < _rows && y > 0)
+    if (x < _cols && x >= 0 && y < _rows && y >= 0)
     {
         return _duty_cycle[y*_cols + x];
     }
@@ -87,7 +87,7 @@ void Frame::overwrite_pixel_intensities(uint16_t *duty_cycle)
 
 void Frame::write_pixel_intensity_at(int x, int y, uint16_t duty_cycle)
 {
-    if (x < _cols && x > 0 && y < _rows && y > 0)
+    if (x < _cols && x >= 0 && y < _rows && y >= 0)
     {
         if (duty_cycle > DUTY_CYCLE_RESOLUTION)
         {
@@ -105,7 +105,7 @@ void Frame::merge_pixel_intensity_at(int x, int y, uint16_t other_pixel_intensit
     this->write_pixel_intensity_at(x,y,new_pixel_intensity);
 }
 
-void Frame::merge_in_other_frame(int other_bottom_left_x, int other_bottom_left_y, Frame *other){
+void Frame::merge_with_frame(int other_bottom_left_x, int other_bottom_left_y, Frame *other){
     uint16_t other_pixel_intensity;
     //Iterate through the other frame and place it inside this one with the offset given by "other_bottom_left" coordinates.
     for (int x = 0; x < other->get_width(); x++)
@@ -140,11 +140,27 @@ inline void Frame::_delete_duty_cycle()
 }
 
 //Constructor
-Animation::Animation(Frame **frames, int num_frames, int cols, int rows)
+/*
+\brief Constructor
+
+\param frames An array of pointers to Frame objects. Default = nullptr
+\param num_frames The length of the "frames" array. Default = 2 (two empty Frame objects are generated if "frames"=nullptr)
+\param cols The number of columns in the animation. Default = COLS (defined in Animation.h)
+\param rows The number of rows in the animation. Default = ROWS (defined in Animation.h)
+\param origin_x The x coordinate of the origin point of this animation. The coordinate is local, meaning that it is relative to the bottom left corner of this animation itself. Default = 0
+\param origin_y The y coordinate of the origin point of this animation. The coordinate is local, meaning that it is relative to the bottom left corner of this animation itself. Default = 0
+\param location_x The x coordinate of the location of this animation. The coordinate is global, meaning that it is relative to the bottom left corner of another animation/canvas. Only used when merging this animation into another animation. Default = 0
+\param location_y The y coordinate of the location of this animation. The coordinate is global, meaning that it is relative to the bottom left corner of another animation/canvas. Only used when merging this animation into another animation. Default = 0
+*/
+Animation::Animation(Frame **frames, int num_frames, int cols, int rows, int origin_x, int origin_y, int location_x, int location_y)
 {
     _num_frames = num_frames;
     _cols = cols;
     _rows = rows;
+    _origin_x = origin_x;
+    _origin_y = origin_y;
+    _location_x = location_x;
+    _location_y = location_y;
     
     if (frames == nullptr)
     {
@@ -429,7 +445,7 @@ int Animation::merge_with(Animation* other){
             for (int x = 0; x < other_width; x++)
             {
                 Serial.printf("Other_x: %d, Origin_X:%d, Other_Y: %d, Origin_y: %d\n", other_x, _origin_x, other_y, _origin_y);
-                this_frame_ptr->merge_in_other_frame(other_x,other_y,other_frame_ptr);
+                this_frame_ptr->merge_with_frame(other_x,other_y,other_frame_ptr);
             }
         }
     }

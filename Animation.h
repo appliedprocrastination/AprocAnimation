@@ -48,7 +48,7 @@ public:
     void        write_pixel_intensity_at(int x, int y, uint16_t duty_cycle);
 
     void        merge_pixel_intensity_at(int x, int y, uint16_t other_pixel_intensity);
-    void        merge_in_other_frame(int other_bottom_left_x, int other_bottom_left_y, Frame *other);
+    void        merge_with_frame(int other_bottom_left_x, int other_bottom_left_y, Frame *other);
 
     int         get_width();
     int         get_height();
@@ -64,7 +64,7 @@ private :
 class Animation
 {
 public:
-    Animation(Frame **frames = nullptr, int num_frames = 2, int cols = COLS, int rows = ROWS);
+    Animation(Frame **frames = nullptr, int num_frames = 2, int cols = COLS, int rows = ROWS, int origin_x = 0, int origin_y = 0, int location_x = 0, int location_y = 0);
     void    delete_anim(void);
     Frame*  get_frame(int frame_num);
     void    write_frame(int frame_num, Frame* frame);
