@@ -35,6 +35,12 @@ enum PlaybackState
     ERROR
 };
 
+enum PlaybackProcess
+{
+    NONE,
+    FADE_IN_FADE_OUT //Fade between frames. Artsy effect that should be used with caution.
+};
+
 class Frame
 {
 public:
@@ -50,8 +56,13 @@ public:
     void        merge_pixel_intensity_at(int x, int y, uint16_t other_pixel_intensity);
     void        merge_with_frame(int other_bottom_left_x, int other_bottom_left_y, Frame *other);
 
+    void        unmerge_pixel_intensity_at(int x, int y, uint16_t other_pixel_intensity);
+    void        unmerge_frame(int other_bottom_left_x, int other_bottom_left_y, Frame *other);
+
     int         get_width();
     int         get_height();
+
+    void        print_to_terminal(int pretty=true);
 private : 
     int         _cols;
     int         _rows;
@@ -83,7 +94,7 @@ public:
     int*    get_location(int *output);
     int*    get_size(int* output);
     int*    get_bottom_left_location(int *output);
-    int merge_with(Animation *other);
+    int     merge_with(Animation *other);
     // End new functionality added with Fetch V2.0
 
     void    start_animation_at(int start_frame = 0);
@@ -105,6 +116,7 @@ private:
 
     PlaybackType    _playback_type  = LOOP;
     PlaybackState   _playback_state = IDLE;
+    PlaybackProcess _playback_process = NONE;
 
     bool            _dir_fwd = true;
     int             _current_frame = 0;
@@ -117,8 +129,6 @@ private:
     int             _origin_y = 0;
     int             _location_x = 0;
     int             _location_y = 0;
-    int             _height = 0; //TODO: Why height and width? Is it different from cols and rows? how?
-    int             _width = 0;
     // End new functionality added with Fetch V2.0
 
 

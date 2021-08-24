@@ -1,6 +1,7 @@
 #include "Animation.h"
 #include "FreeStack.h"
 #include "csv_helpers.h"
+#include <string.h>
 
 File sdFile;
 //Constructor
@@ -92,7 +93,8 @@ void Frame::write_pixel_intensity_at(int x, int y, uint16_t duty_cycle)
         if (duty_cycle > DUTY_CYCLE_RESOLUTION)
         {
             duty_cycle = DUTY_CYCLE_RESOLUTION;
-        }else if(duty_cycle < 0){
+        }else
+        if(duty_cycle < 0){
             duty_cycle = 0;
         }
         _duty_cycle[x + y * _cols] = duty_cycle;
@@ -102,7 +104,12 @@ void Frame::write_pixel_intensity_at(int x, int y, uint16_t duty_cycle)
 void Frame::merge_pixel_intensity_at(int x, int y, uint16_t other_pixel_intensity){
     //Merge is done by adding together the two duty cycle values for now.
     uint16_t new_pixel_intensity = this->get_pixel_intensity_at(x,y) + other_pixel_intensity;
-    this->write_pixel_intensity_at(x,y,new_pixel_intensity);
+    //this->write_pixel_intensity_at(x,y,new_pixel_intensity); //We don't want to max out the pixel intensity at 4096 because going past that value means we can "unmerge" frames by subracting them from each other.
+    if (new_pixel_intensity < 0)
+    {
+        new_pixel_intensity = 0;
+    }
+    _duty_cycle[x + y * _cols] = new_pixel_intensity;
 }
 
 void Frame::merge_with_frame(int other_bottom_left_x, int other_bottom_left_y, Frame *other){
@@ -122,6 +129,36 @@ void Frame::merge_with_frame(int other_bottom_left_x, int other_bottom_left_y, F
     }
 }
 
+void Frame::unmerge_pixel_intensity_at(int x, int y, uint16_t other_pixel_intensity)
+{
+    //Merge is done by adding together the two duty cycle values for now.
+    uint16_t new_pixel_intensity = this->get_pixel_intensity_at(x, y) - other_pixel_intensity;
+    //this->write_pixel_intensity_at(x,y,new_pixel_intensity); //We don't want to max out the pixel intensity at 4096 because going past that value means we can "unmerge" frames by subracting them from each other.
+    if (new_pixel_intensity < 0)
+    {
+        new_pixel_intensity = 0;
+    }
+    _duty_cycle[x + y * _cols] = new_pixel_intensity;
+}
+
+void Frame::unmerge_frame(int other_bottom_left_x, int other_bottom_left_y, Frame *other)
+{
+    uint16_t other_pixel_intensity;
+    //Iterate through the other frame and place it inside this one with the offset given by "other_bottom_left" coordinates.
+    for (int x = 0; x < other->get_width(); x++)
+    {
+        for (int y = 0; y < other->get_height(); y++)
+        {
+            other_pixel_intensity = other->get_pixel_intensity_at(x, y);
+            if (other_pixel_intensity > 0)
+            {
+                // This will cause a change, therefore merge in the pixel.
+                this->unmerge_pixel_intensity_at(x + other_bottom_left_x, y + other_bottom_left_y, other_pixel_intensity);
+            } //else: no change. Ignore this pixel
+        }
+    }
+}
+
 int Frame::get_width()
 {
     return _cols;
@@ -131,6 +168,76 @@ int Frame::get_height()
     return _rows;
 }
 
+void Frame::print_to_terminal(int pretty){
+    if(Serial)
+    {
+        Serial.println("Frame:");
+        if(pretty){
+            char row_string[_cols+1];
+            uint16_t value;
+
+            //print top border;
+            for (int x = 0; x < _cols+1; x++)
+            {
+                Serial.print("_");
+            }
+            Serial.println("_");
+            for (int y = _rows; y >= 0; y--) //draw from top to bottom
+            {
+                //Print left side of border
+                Serial.print("|");
+                //Print out * or whitespace for values
+                int x = 0;
+                for (x; x < _cols; x++)
+                {
+                    value = get_pixel_intensity_at(x,y);
+                    row_string[x] =  value > 0 ? '*' : ' ';
+                }
+                row_string[x] = 0;
+                Serial.print(row_string);
+                //Print right side of border
+                Serial.println("|");
+            }
+            //Print bottom border
+            for (int x = 0; x < _cols+1; x++)
+            {
+                Serial.print("-");
+            }
+            Serial.println("-");
+        }else{
+            char val_fmt_str[] = "%5u "; //Will return a 5 character long string + 1 string terminator (6 characters in total)
+            char val_str[6 + 1];
+            uint16_t value;
+            //Print top border
+            for (int x = 0; x < (6 * _cols) + 1; x++)
+            {
+                Serial.print("_");
+            }
+            Serial.println("_");
+            for (int y = _rows; y >= 0; y--) //draw from top to bottom
+            {
+                //Print left border
+                Serial.print("|");
+                //Print out values
+                int x = 0;
+                for (x; x < _cols; x++)
+                {
+                    value = get_pixel_intensity_at(x, y);
+                    sprintf(val_str, val_fmt_str, value);
+                    Serial.print(val_str);
+                }
+                //Print right border
+                Serial.println("|");
+            }
+            //Print bottom border
+            for (int x = 0; x < (6 * _cols) + 1; x++)
+            {
+                Serial.print("-");
+            }
+            Serial.println("-");
+        }
+    }
+}
 // Private Methods
 
 inline void Frame::_delete_duty_cycle()
@@ -338,8 +445,8 @@ int *Animation::get_location(int *output)
 */
 int *Animation::get_size(int *output)
 {
-    output[0] = _width;
-    output[1] = _height;
+    output[0] = _cols;
+    output[1] = _rows;
     return output;
 }
 /* 
@@ -441,10 +548,10 @@ int Animation::merge_with(Animation* other){
             this_frame_ptr = this->get_frame(f);
             other_frame_ptr = other->get_frame(f);
             
-            Serial.printf("Other w: %d, Origin h:%d, this w: %d, this h: %d\n", other_width, other_height, this_width, this_height);
+            //Serial.printf("Other w: %d, Origin h:%d, this w: %d, this h: %d\n", other_width, other_height, this_width, this_height);
             for (int x = 0; x < other_width; x++)
             {
-                Serial.printf("Other_x: %d, Origin_X:%d, Other_Y: %d, Origin_y: %d\n", other_x, _origin_x, other_y, _origin_y);
+                //Serial.printf("Other_x: %d, Origin_X:%d, Other_Y: %d, Origin_y: %d\n", other_x, _origin_x, other_y, _origin_y);
                 this_frame_ptr->merge_with_frame(other_x,other_y,other_frame_ptr);
             }
         }
